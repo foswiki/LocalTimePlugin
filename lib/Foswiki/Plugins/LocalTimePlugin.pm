@@ -18,7 +18,7 @@
 
 
 # =========================
-package TWiki::Plugins::LocalTimePlugin;
+package Foswiki::Plugins::LocalTimePlugin;
 use Date::Handler;
 use strict;
 
@@ -46,21 +46,21 @@ sub initPlugin
     ( $topic, $web, $user, $installWeb ) = @_;
 
     # check for Plugins.pm versions
-    if( $TWiki::Plugins::VERSION < 1 ) {
-        TWiki::Func::writeWarning( "Version mismatch between LocalTimePlugin and Plugins.pm" );
+    if( $Foswiki::Plugins::VERSION < 1 ) {
+        Foswiki::Func::writeWarning( "Version mismatch between LocalTimePlugin and Plugins.pm" );
         return 0;
     }
 
     # Get plugin debug flag
-    $debug = TWiki::Func::getPreferencesFlag( "LOCALTIMEPLUGIN_DEBUG" );
+    $debug = Foswiki::Func::getPreferencesFlag( "LOCALTIMEPLUGIN_DEBUG" );
 
     # Get plugin preferences, the variable defined by:          * Set EXAMPLE = ...
-    $timezone = &TWiki::Func::getPreferencesValue( "LOCALTIMEPLUGIN_TIMEZONE" ) || "Asia/Tokyo";
+    $timezone = &Foswiki::Func::getPreferencesValue( "LOCALTIMEPLUGIN_TIMEZONE" ) || "Asia/Tokyo";
 
-    TWiki::Func::registerTagHandler( 'LOCALTIME', \&handleLocalTime );
+    Foswiki::Func::registerTagHandler( 'LOCALTIME', \&handleLocalTime );
 
     # Plugin correctly initialized
-    TWiki::Func::writeDebug( "- TWiki::Plugins::${pluginName}::initPlugin( $web.$topic ) is OK" ) if $debug;
+    Foswiki::Func::writeDebug( "- Foswiki::Plugins::${pluginName}::initPlugin( $web.$topic ) is OK" ) if $debug;
     return 1;
 }
 
@@ -69,7 +69,7 @@ sub commonTagsHandler
 {
 ### my ( $text, $topic, $web ) = @_;   # do not uncomment, use $_[0], $_[1]... instead
 
-    TWiki::Func::writeDebug( "- ${pluginName}::commonTagsHandler( $_[2].$_[1] )" ) if $debug;
+    Foswiki::Func::writeDebug( "- ${pluginName}::commonTagsHandler( $_[2].$_[1] )" ) if $debug;
 
 #    $_[0] =~ s/%LOCALTIME%/&handleLocalTime($timezone)/geo;
 #    $_[0] =~ s/%LOCALTIME{(.*?)}%/&handleLocalTime($1)/geo;
@@ -93,17 +93,17 @@ sub handleLocalTime {
 
     my $date;
     if (defined ($specifieddateGMT)) {
-        $date = new Date::Handler({ date => TWiki::Time::parseTime($specifieddateGMT), time_zone => $tz });
+        $date = new Date::Handler({ date => Foswiki::Time::parseTime($specifieddateGMT), time_zone => $tz });
     } else {
         $date = new Date::Handler({ date => time, time_zone => $tz });
     }
     
 
-#swiped from TWiki::Time::formatTime
-#SMELL: should combine this code into TWiki::Time, or abstract out and reuse..
+#swiped from Foswiki::Time::formatTime
+#SMELL: should combine this code into Foswiki::Time, or abstract out and reuse..
     my $value = '';
     $formatString ||= '$wday, $day $month $year, $hour:$min:$sec ($tz)';
-#    my $outputTimeZone ||= $TWiki::cfg{DisplayTimeValues};
+#    my $outputTimeZone ||= $Foswiki::cfg{DisplayTimeValues};
 
     #standard twiki date time formats
     if( $formatString =~ /rcs/i ) {
@@ -112,7 +112,7 @@ sub handleLocalTime {
     } elsif ( $formatString =~ /http|email/i ) {
         # HTTP header format, e.g. "Thu, 23 Jul 1998 07:21:56 EST"
  	    # - based on RFC 2616/1123 and HTTP::Date; also used
-        # by TWiki::Net for Date header in emails.
+        # by Foswiki::Net for Date header in emails.
         $formatString = '$wday, $day $month $year $hour:$min:$sec $tz';
     } elsif ( $formatString =~ /iso/i ) {
         # ISO Format, see spec at http://www.w3.org/TR/NOTE-datetime
@@ -127,10 +127,10 @@ sub handleLocalTime {
     $value =~ s/\$minu?t?e?s?/sprintf('%.2u',$date->Min())/gei;
     $value =~ s/\$hour?s?/sprintf('%.2u',$date->Hour())/gei;
     $value =~ s/\$day/sprintf('%.2u',$date->Day())/gei;
-    $value =~ s/\$wday/$TWiki::Time::WEEKDAY[$date->WeekDay()]/gi;
+    $value =~ s/\$wday/$Foswiki::Time::WEEKDAY[$date->WeekDay()]/gi;
     $value =~ s/\$dow/$date->WeekDay()/gei;
-    $value =~ s/\$week/TWiki::Time::_weekNumber($date->Day(),$date->Month()-1,$date->Year(),$date->WeekDay())/egi;
-    $value =~ s/\$mont?h?/$TWiki::Time::ISOMONTH[$date->Month()-1]/gi;
+    $value =~ s/\$week/Foswiki::Time::_weekNumber($date->Day(),$date->Month()-1,$date->Year(),$date->WeekDay())/egi;
+    $value =~ s/\$mont?h?/$Foswiki::Time::ISOMONTH[$date->Month()-1]/gi;
     $value =~ s/\$mo/sprintf('%.2u',$date->Month())/gei;
     $value =~ s/\$year?/sprintf('%.4u',$date->Year())/gei;
     $value =~ s/\$ye/sprintf('%.2u',$date->Year()%100)/gei;
