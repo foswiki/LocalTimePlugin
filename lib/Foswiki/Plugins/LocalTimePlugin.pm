@@ -3,11 +3,11 @@
 # Copyright (C) 2000-2003 Andrea Sterbini, a.sterbini@flashnet.it
 # Copyright (C) 2001-2003 Peter Thoeny, peter@thoeny.com
 # Copyright (C) 2003      Nathan Ollerenshaw, chrome@stupendous.net
-# Copyright (C) 2006      Sven Dowideit, SvenDowideit@WikiRing.com
+# Copyright (C) 2006-2009      Sven Dowideit, SvenDowideit@WikiRing.com
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
+# as published by the Free Software Foundation; either version 3
 # of the License, or (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -28,7 +28,7 @@ use vars qw(
         $debug $exampleCfgVar $timezone
     );
 
-# This should always be $Rev$ so that TWiki can determine the checked-in
+# This should always be $Rev$ so that Foswiki can determine the checked-in
 # status of the plugin. It is used by the build automation tools, so
 # you should leave it alone.
 $VERSION = '$Rev$';
@@ -105,7 +105,7 @@ sub handleLocalTime {
     $formatString ||= '$wday, $day $month $year, $hour:$min:$sec ($tz)';
 #    my $outputTimeZone ||= $Foswiki::cfg{DisplayTimeValues};
 
-    #standard twiki date time formats
+    #standard foswiki date time formats
     if( $formatString =~ /rcs/i ) {
         # RCS format, example: "2001/12/31 23:59:59"
         $formatString = '$year/$mo/$day $hour:$min:$sec';
