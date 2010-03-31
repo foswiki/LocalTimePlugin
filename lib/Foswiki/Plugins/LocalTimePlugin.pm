@@ -3,7 +3,7 @@
 # Copyright (C) 2000-2003 Andrea Sterbini, a.sterbini@flashnet.it
 # Copyright (C) 2001-2003 Peter Thoeny, peter@thoeny.com
 # Copyright (C) 2003      Nathan Ollerenshaw, chrome@stupendous.net
-# Copyright (C) 2006-2009      Sven Dowideit, SvenDowideit@WikiRing.com
+# Copyright (C) 2006-2009 Sven Dowideit, SvenDowideit@WikiRing.com
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -13,9 +13,8 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details, published at 
+# GNU General Public License for more details, published at
 # http://www.gnu.org/copyleft/gpl.html
-
 
 # =========================
 package Foswiki::Plugins::LocalTimePlugin;
@@ -24,9 +23,9 @@ use strict;
 
 # =========================
 use vars qw(
-        $web $topic $user $installWeb $VERSION $RELEASE $pluginName
-        $debug $exampleCfgVar $timezone
-    );
+  $web $topic $user $installWeb $VERSION $RELEASE $pluginName
+  $debug $exampleCfgVar $timezone
+);
 
 # This should always be $Rev$ so that Foswiki can determine the checked-in
 # status of the plugin. It is used by the build automation tools, so
@@ -38,83 +37,103 @@ $VERSION = '$Rev$';
 # of the version number in PLUGINDESCRIPTIONS.
 $RELEASE = 'Dakar';
 
-$pluginName = 'LocalTimePlugin';  # Name of this Plugin
+$pluginName = 'LocalTimePlugin';    # Name of this Plugin
 
 # =========================
-sub initPlugin
-{
+sub initPlugin {
     ( $topic, $web, $user, $installWeb ) = @_;
 
     # check for Plugins.pm versions
-    if( $Foswiki::Plugins::VERSION < 1 ) {
-        Foswiki::Func::writeWarning( "Version mismatch between LocalTimePlugin and Plugins.pm" );
+    if ( $Foswiki::Plugins::VERSION < 1 ) {
+        Foswiki::Func::writeWarning(
+            "Version mismatch between LocalTimePlugin and Plugins.pm");
         return 0;
     }
 
     # Get plugin debug flag
-    $debug = Foswiki::Func::getPreferencesFlag( "LOCALTIMEPLUGIN_DEBUG" );
+    $debug = Foswiki::Func::getPreferencesFlag("LOCALTIMEPLUGIN_DEBUG");
 
-    # Get plugin preferences, the variable defined by:          * Set EXAMPLE = ...
-    $timezone = &Foswiki::Func::getPreferencesValue( "LOCALTIMEPLUGIN_TIMEZONE" ) || "Asia/Tokyo";
+ # Get plugin preferences, the variable defined by:          * Set EXAMPLE = ...
+    $timezone = &Foswiki::Func::getPreferencesValue("LOCALTIMEPLUGIN_TIMEZONE")
+      || "Asia/Tokyo";
 
     Foswiki::Func::registerTagHandler( 'LOCALTIME', \&handleLocalTime );
 
     # Plugin correctly initialized
-    Foswiki::Func::writeDebug( "- Foswiki::Plugins::${pluginName}::initPlugin( $web.$topic ) is OK" ) if $debug;
+    Foswiki::Func::writeDebug(
+        "- Foswiki::Plugins::${pluginName}::initPlugin( $web.$topic ) is OK")
+      if $debug;
     return 1;
 }
 
 # =========================
-sub commonTagsHandler
-{
+sub commonTagsHandler {
 ### my ( $text, $topic, $web ) = @_;   # do not uncomment, use $_[0], $_[1]... instead
 
-    Foswiki::Func::writeDebug( "- ${pluginName}::commonTagsHandler( $_[2].$_[1] )" ) if $debug;
+    Foswiki::Func::writeDebug(
+        "- ${pluginName}::commonTagsHandler( $_[2].$_[1] )")
+      if $debug;
 
-#    $_[0] =~ s/%LOCALTIME%/&handleLocalTime($timezone)/geo;
-#    $_[0] =~ s/%LOCALTIME{(.*?)}%/&handleLocalTime($1)/geo;
+    #    $_[0] =~ s/%LOCALTIME%/&handleLocalTime($timezone)/geo;
+    #    $_[0] =~ s/%LOCALTIME{(.*?)}%/&handleLocalTime($1)/geo;
 }
+
 # =========================
 
 sub handleLocalTime {
-    my($session, $params, $theTopic, $theWeb) = @_;
+    my ( $session, $params, $theTopic, $theWeb ) = @_;
 
-    my $tz = $params->{_DEFAULT} || $timezone;
-    my $formatString = $params->{format};
-    my $fromtopic = $params->{fromtopic};
+    my $tz               = $params->{_DEFAULT} || $timezone;
+    my $formatString     = $params->{format};
+    my $fromtopic        = $params->{fromtopic};
     my $specifieddateGMT = $params->{dateGMT};
 
-    if (defined($fromtopic)) {
+    if ( defined($fromtopic) ) {
+
         #TODO: normalise topic
-        my( $web, $topic ) = $session->normalizeWebTopicName( $theWeb, $fromtopic );
-        my $zone = $session->{prefs}->getTopicPreferencesValue('TIMEZONE', $web, $topic);
+        my ( $web, $topic ) =
+          $session->normalizeWebTopicName( $theWeb, $fromtopic );
+        my $zone =
+          $session->{prefs}
+          ->getTopicPreferencesValue( 'TIMEZONE', $web, $topic );
         $tz = $zone if defined($zone);
     }
 
     my $date;
-    if (defined ($specifieddateGMT)) {
-        $date = new Date::Handler({ date => Foswiki::Time::parseTime($specifieddateGMT), time_zone => $tz });
-    } else {
-        $date = new Date::Handler({ date => time, time_zone => $tz });
+    if ( defined($specifieddateGMT) ) {
+        $date = new Date::Handler(
+            {
+                date      => Foswiki::Time::parseTime($specifieddateGMT),
+                time_zone => $tz
+            }
+        );
     }
-    
+    else {
+        $date = new Date::Handler( { date => time, time_zone => $tz } );
+    }
 
 #swiped from Foswiki::Time::formatTime
 #SMELL: should combine this code into Foswiki::Time, or abstract out and reuse..
     my $value = '';
     $formatString ||= '$wday, $day $month $year, $hour:$min:$sec ($tz)';
-#    my $outputTimeZone ||= $Foswiki::cfg{DisplayTimeValues};
+
+    #    my $outputTimeZone ||= $Foswiki::cfg{DisplayTimeValues};
 
     #standard foswiki date time formats
-    if( $formatString =~ /rcs/i ) {
+    if ( $formatString =~ /rcs/i ) {
+
         # RCS format, example: "2001/12/31 23:59:59"
         $formatString = '$year/$mo/$day $hour:$min:$sec';
-    } elsif ( $formatString =~ /http|email/i ) {
+    }
+    elsif ( $formatString =~ /http|email/i ) {
+
         # HTTP header format, e.g. "Thu, 23 Jul 1998 07:21:56 EST"
- 	    # - based on RFC 2616/1123 and HTTP::Date; also used
+        # - based on RFC 2616/1123 and HTTP::Date; also used
         # by Foswiki::Net for Date header in emails.
         $formatString = '$wday, $day $month $year $hour:$min:$sec $tz';
-    } elsif ( $formatString =~ /iso/i ) {
+    }
+    elsif ( $formatString =~ /iso/i ) {
+
         # ISO Format, see spec at http://www.w3.org/TR/NOTE-datetime
         # e.g. "2002-12-31T19:30:12Z"
         $formatString = '$year-$mo-$dayT$hour:$min:$sec';
@@ -129,7 +148,8 @@ sub handleLocalTime {
     $value =~ s/\$day/sprintf('%.2u',$date->Day())/gei;
     $value =~ s/\$wday/$Foswiki::Time::WEEKDAY[$date->WeekDay()]/gi;
     $value =~ s/\$dow/$date->WeekDay()/gei;
-    $value =~ s/\$week/Foswiki::Time::_weekNumber($date->Day(),$date->Month()-1,$date->Year(),$date->WeekDay())/egi;
+    $value =~
+s/\$week/Foswiki::Time::_weekNumber($date->Day(),$date->Month()-1,$date->Year(),$date->WeekDay())/egi;
     $value =~ s/\$mont?h?/$Foswiki::Time::ISOMONTH[$date->Month()-1]/gi;
     $value =~ s/\$mo/sprintf('%.2u',$date->Month())/gei;
     $value =~ s/\$year?/sprintf('%.4u',$date->Year())/gei;
@@ -141,13 +161,15 @@ sub handleLocalTime {
 }
 
 sub _weekNumber {
-    my( $day, $mon, $year, $wday ) = @_;
+    my ( $day, $mon, $year, $wday ) = @_;
 
     # calculate the calendar week (ISO 8601)
-    my $nextThursday = timegm(0, 0, 0, $day, $mon, $year) +
-      (3 - ($wday + 6) % 7) * 24 * 60 * 60; # nearest thursday
-    my $firstFourth = timegm(0, 0, 0, 4, 0, $year); # january, 4th
-    return sprintf('%.0f', ($nextThursday - $firstFourth) / ( 7 * 86400 )) + 1;
+    my $nextThursday =
+      timegm( 0, 0, 0, $day, $mon, $year ) +
+      ( 3 - ( $wday + 6 ) % 7 ) * 24 * 60 * 60;    # nearest thursday
+    my $firstFourth = timegm( 0, 0, 0, 4, 0, $year );    # january, 4th
+    return
+      sprintf( '%.0f', ( $nextThursday - $firstFourth ) / ( 7 * 86400 ) ) + 1;
 }
 
 1;
