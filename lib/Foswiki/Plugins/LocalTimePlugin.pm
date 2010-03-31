@@ -67,18 +67,6 @@ sub initPlugin {
 }
 
 # =========================
-sub commonTagsHandler {
-### my ( $text, $topic, $web ) = @_;   # do not uncomment, use $_[0], $_[1]... instead
-
-    Foswiki::Func::writeDebug(
-        "- ${pluginName}::commonTagsHandler( $_[2].$_[1] )")
-      if $debug;
-
-    #    $_[0] =~ s/%LOCALTIME%/&handleLocalTime($timezone)/geo;
-    #    $_[0] =~ s/%LOCALTIME{(.*?)}%/&handleLocalTime($1)/geo;
-}
-
-# =========================
 
 sub handleLocalTime {
     my ( $session, $params, $theTopic, $theWeb ) = @_;
