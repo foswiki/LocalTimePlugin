@@ -133,6 +133,7 @@ formatted string.  Uses the Date::Handler and Date:Parse Perl modules.
       * =DEFAULT= - (optional) the desired timezone in which to render the date/time. Defaults to the LOCALTIMEPLUGIN_TIMEZONE preference setting or UTC.
       * =datetime= - (optional) the date/time to display, assumed to be in UTC unless the string contains a timezone identifier.  Defaults to the current date and time
       * =format= - (optional) the desired output format specifier string. Defaults to the LOCALTIMEPLUGIN_DATEFORMAT preference or to the Foswiki '$longdate' format
+      * =locale= - (optional) the desired locale definition to use when displaying the date and time. Defaults to the LOCALTIMEPLUGIN_LOCALE preference or to the site's locale defined in $Foswiki::cfg{Site}{Locale}
       * =fromtopic= - (optional, deprecated) the web.topic from which to set the value of the TIMEZONE variable, use the LOCALTIMEPLUGIN_TIMEZONE preference instead
       * =dateGMT= - (optional, deprecated) the same as the =datetime= parameter, use =datetime= instead
    * =$theTopic= - the name of the topic being processed
@@ -169,6 +170,11 @@ sub handleLocalTime {
          $params->{format}
       || &Foswiki::Func::getPreferencesValue('LOCALTIMEPLUGIN_DATEFORMAT')
       || '$longdate';
+
+    my $locale =
+         $params->{locale}
+      || &Foswiki::Func::getPreferencesValue('LOCALTIMEPLUGIN_LOCALE')
+      || ( $Foswiki::cfg{UseLocale} ? $Foswiki::cfg{Site}{Locale} : 'en_US' );
 
     if ( !defined( $params->{datetime} ) && defined( $params->{dateGMT} ) ) {
         _warning( "$theWeb.$theTopic",
@@ -253,7 +259,8 @@ s!^(\d{1,2})([-/ :\.])([a-zA-Z]{3,})\2(\d{4}|\d{2})([^:\.])!$1-$3-$4$5!;
     my $date = new Date::Handler(
         {
             date      => $time,
-            time_zone => $timezone
+            time_zone => $timezone,
+            locale    => $locale
         }
     );
 
@@ -291,6 +298,7 @@ sub _callModPerl2Helper {
 
     my $time     = $date->Epoch();
     my $timezone = $date->TimeZone();
+    my $locale   = $date->Locale();
 
     my $utc = Foswiki::Time::formatTime( $time, '$iso', 'gmtime' );
     _debugEntryPoint(
@@ -299,6 +307,7 @@ sub _callModPerl2Helper {
         {
             date     => $utc,
             format   => $format,
+            locale   => $locale,
             timezone => $timezone
         }
     );
@@ -320,6 +329,7 @@ sub _callModPerl2Helper {
     # Protect against Perl code insertion attacks by Base64 encoding the text
     # the user gave us
     $timezone = APR::Base64::encode($timezone);
+    $locale   = APR::Base64::encode($locale);
     $format   = APR::Base64::encode($format);
     my $helperScript = <<EOT;
 #!/usr/lib/perl
@@ -328,9 +338,11 @@ use warnings;
 use APR::Base64;
 use Date::Handler;
 my \$timezone = APR::Base64::decode( '$timezone' );
+my \$locale = APR::Base64::decode( '$locale' );
 my \$format = APR::Base64::decode( '$format' );
 my \$date = new Date::Handler( { date => $time, 
-                                 time_zone => \$timezone } );
+                                 time_zone => \$timezone,
+                                 locale => \$locale } );
 print \$date->TimeFormat( \$format );
 
 EOT

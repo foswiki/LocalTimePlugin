@@ -20,14 +20,14 @@ __Related topics:__
 
 Use the %<nop>LOCALTIME% macro anywhere in your topic to insert a formatted
 date and/or time for display. The macro can display either the current time or
-an arbitrary time of your choosing. Options to control the format and time zone
-to use when displaying the date/time may be specified when the macro
+an arbitrary time of your choosing. Options to control the format, time zone, 
+and locale to use when displaying the date/time may be specified when the macro
 is used or determined by [[#PreferenceSettings][plugin preference settings]].
 
 ---++ Syntax
 %STARTSECTION{"syntax"}%   * Syntax: =%<nop>LOCALTIME%= or =%<nop>LOCALTIME{&hellip;}%=
    * =%<nop>LOCALTIME%= expands to the current date and time using the default
-     format and time zone
+     format, time zone, and locale
    * =%<nop>LOCALTIME{&hellip;}%= expands to a date and time allowing the 
      default behavior to be overridden according to any parameters supplied
    * Supported parameters:
@@ -35,6 +35,7 @@ is used or determined by [[#PreferenceSettings][plugin preference settings]].
      | ="timezone"= | The name of the desired time zone such as ="Asia/Tokyo"= or ="CST6CDT"= or ="UTC"= |  ="UTC"=  |
      | =datetime="&hellip;"= | The date and time to display. This parameter is assumed to be in UTC unless it contains a time zone specifier. <br /> %TWISTY{mode="div" showlink="Supported date/time formats" hidelink="Supported date/time formats" showimgleft="%ICONURLPATH{toggleopen-small}%" hideimgleft="%ICONURLPATH{toggleclose-small}%"}%<ul>  <li>Foswiki default:    <ul>      <li> =31 Dec 2001 - 23:59 GMT= </li>    </ul>  </li>  <li>ISO 8601:    <ul>      <li> =2001-12-31T23:59:59-0500= </li>    </ul>  </li>  <li>Internet (RFC 822/1123/2616/2822/5322):    <ul>      <li> =Fri, 31 Dec 1999 23:59:59 -0500 (EST)= </li>    </ul>  </li>  <li>RCS:    <ul>      <li> =1999/12/31 23:59:59 UTC= </li>    </ul>  </li>  <li>Dotted decimal:    <ul>      <li> =1999.12.31.23.59.59 UTC= </li>    </ul>  </li></ul><br /> __Notes:__ <ul>  <li>Dates must be between =<nobr>1901-12-17 00:00:00 UTC</nobr>= and =<nobr>2038-01-16 23:59:59 UTC</nobr>= </li>  <li>Text in ()'s is ignored as are the day of the week and comma, if present.</li>  <li>The time component is optional and defaults to midnight. If supplied, both hour and minute fields are required while seconds are optional.</li>  <li>Time zone specifiers are optional and default to UTC. When specified as an offset from UTC, they may be specified as &plusmn;HHMM or &plusmn;HH:MM</li>  <li>Time zones are part of the time specification, so you must specify a time in order to specify a time zone.  If you desire a date to be interpreted locally, explicitly indicate midnight and the local time zone as in =<nobr>2010-03-24&nbsp;00:00&nbsp;-0600</nobr>=  <li>Years may be specified using 2 or 4 digits. When only 2 digits are supplied:  <ul>    <li>00 to 38 are interpreted as the years 2000 to 2038</li>    <li>39 to 60 are invalid and result in an error</li>    <li>61 to 99 are interpreted as 1961 to 1999</li>  </ul>  <li>Months may be specified as numbers (1-12), short names (Jan-Dec), or long names (January-December), English month names only</li>  <li>When both the month and day are specified as numbers, they are always interpreted assuming an American-style date format where the month comes before the day. (i.e. MM/DD/CCYY)</li>  <li>When only a month and day are specified, the year is assumed to be the current year if the date falls within the current or a prior month and the prior year if the date falls within a subsequent month.</li>  <li>When only a year is specified, January 1st is assumed.</li></ul>%ENDTWISTY% | Current&nbsp;time |
      | =format="&hellip;"= | The format specifier string defining how to display the date and/or time |  ="$longdate"=  |
+     | =locale="&hellip;"= | The locale to use when displaying the date/time |  ="en_US"=  |
 
    * Deprecated parameters:
      | *Parameter:* | *Description:* |  *Deprecated*  |
@@ -79,6 +80,7 @@ several ways to manipulate the display of dates and times using the plugin.
 
 __Current default settings:__
    * LOCALTIMEPLUGIN_DATEFORMAT is: %IF{"defined 'LOCALTIMEPLUGIN_DATEFORMAT'" then="%LOCALTIMEPLUGIN_DATEFORMAT%" else="$longdate"}%
+   * LOCALTIMEPLUGIN_LOCALE is: %IF{"defined 'LOCALTIMEPLUGIN_LOCALE'" then="%LOCALTIMEPLUGIN_LOCALE%" else="en_US"}%
    * LOCALTIMEPLUGIN_TIMEZONE is: %IF{"defined 'LOCALTIMEPLUGIN_TIMEZONE'" then="%LOCALTIMEPLUGIN_TIMEZONE%" else="UTC"}%
 
 | *You want:* | *You type:* | *You get (if installed):* |
@@ -86,6 +88,7 @@ __Current default settings:__
 | Current time in Tokyo: | =%<nop>LOCALTIME{"Asia/Tokyo"}%= | %LOCALTIME{"Asia/Tokyo"}% |
 | Current time in US Central Time Zone: | =%<nop>LOCALTIME{"CST6CDT"}%= | %LOCALTIME{"CST6CDT"}% |
 | Current time in Internet format: | =%<nop>LOCALTIME{format="$rfc"}%= | %LOCALTIME{format="$rfc"}% |
+| Current time in Paris, France: | =%<nop>LOCALTIME{"Europe/Paris" locale="fr_FR" format="$rfc"}%= | %LOCALTIME{"Europe/Paris" locale="fr_FR" format="$rfc"}% |
 | 2006-04-05T15:43:50Z in Sydney, Australia: | =%<nop>LOCALTIME{"Australia/Sydney" datetime="2006-04-05T15:43:50Z"}%= | %LOCALTIME{"Australia/Sydney" datetime="2006-04-05T15:43:50Z"}% |
 | <nobr>Sun, 28 Mar 2010 05:58:38 -0500 (CDT)</nobr> in Sydney, Australia in HTTP format: | =%<nop>LOCALTIME{"Australia/Sydney" datetime="Sun, 28 Mar 2010 05:58:38 -0500 (CDT)" format="$http"}%= | %LOCALTIME{"Australia/Sydney" datetime="Sun, 28 Mar 2010 05:58:38 -0500 (CDT)" format="$http"}% |
 
@@ -101,6 +104,7 @@ web's [[WebPreferences][Web Preferences topic]], your own
 | *Setting* | *Description* |  *Default*  |
 | DATEFORMAT | The default output format specifier to use when formatting dates and/or times |  =$longdate=  |
 | DEBUG | Enable/disable logging of debug traces to the Foswiki Debug Log |  =off=  |
+| LOCALE | The default locale to use when formatting dates and/or times |  =en_US=  |
 | TIMEZONE | The default time zone to use when interpreting the value of the =datetime= parameter when no time zone is provided. |  =UTC=  |
 
 __Note:__ 
@@ -118,6 +122,7 @@ the example assignment statements below to set the desired preference value.
 <pre>
    %ASTERISK% Set LOCALTIMEPLUGIN_DATEFORMAT = $longdate
    %ASTERISK% Set LOCALTIMEPLUGIN_DEBUG = off
+   %ASTERISK% Set LOCALTIMEPLUGIN_LOCALE = en_US
    %ASTERISK% Set LOCALTIMEPLUGIN_TIMEZONE = UTC
 </pre>
 
@@ -131,9 +136,11 @@ the server.
 be set to configure the plugin to work in your particular environment.
 
 | *Setting* | *Description* |
+| ={UseLocale}= | Enable/Disable use of locales for the site |
+| ={Site}{Locale}= | The default locale for the site.  This setting will be ignored if ={UseLocale}= is disabled. |
 | ={DefaultDateFormat}= | The default date format for the site |
 | ={Tools}{perlCmd}= | The path to the Perl interpreter if it isn't on the default path |
-| ={Plugins}{LocalTimePlugin}{perlCmd}= | The path to the Perl interpreter if it isn't on the default path. If present, overrides the setting of ={ModPerlEngineContrib}{perlCmd}=  |
+| ={Plugins}{LocalTimePlugin}{perlCmd}= | The path to the Perl interpreter if it isn't on the default path. If present, overrides the setting of ={Tools}{perlCmd}=  |
 
 ---++ Installation
 
@@ -172,7 +179,7 @@ attached to the Foswiki:Extensions.LocalTimePlugin topic.
 |  Support: | Foswiki:Support.%TOPIC% |
 |  Dependencies: | %$DEPENDENCIES% |
 |  Change History: | <!-- versions below in reverse order -->&nbsp; |
-|  31 Mar 2010 (1.1): | Foswikitask:Item8805 - Correct handling of parameters and formatting tokens<br/> Foswikitask:Item8806 - Change default time zone to UTC, add =datetime= parameter, deprecate =fromtopic= and =dateGMT= parameters<br /> Foswikitask:Item8757 - Add support for mod_perl2<br/> Foswikitask:Item1854 - Use published Plugin API calls |
+|  31 Mar 2010 (1.1): | Foswikitask:Item8805 - Correct handling of parameters and formatting tokens<br/> Foswikitask:Item8806 - Change default time zone to UTC, add =datetime= parameter, deprecate =fromtopic= and =dateGMT= parameters<br/> Foswikitask:Item8757 - Add support for mod_perl2<br/> Foswikitask:Item8807 - Add support for user locale<br/> Foswikitask:Item1854 - Use published Plugin API calls |
 |  20 Feb 2009 (1.0): | port to Foswiki |
 |  <span style="white-space:pre;">05 Mar 2006 (Dakar):</span> | SvenDowideit@WikiRing.com - updated to use registerHandler, added format= and dateGMT parameters |
 |  02 Jul 2003: | Initial version |
