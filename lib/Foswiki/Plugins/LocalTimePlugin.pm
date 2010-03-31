@@ -109,9 +109,10 @@ formatted string.  Uses the Date::Handler and Date:Parse Perl modules.
    * =$session= - a reference to the Foswiki session object
    * =$params= - a reference to a Foswiki::Attrs object containing the macro parameters
       * =DEFAULT= - (optional) the desired timezone in which to render the date/time. Defaults to the LOCALTIMEPLUGIN_TIMEZONE preference setting or UTC.
-      * =dateGMT= - (optional) the date/time to display, assumed to be in UTC unless the string contains a timezone identifier.  Defaults to the current date and time
+      * =datetime= - (optional) the date/time to display, assumed to be in UTC unless the string contains a timezone identifier.  Defaults to the current date and time
       * =format= - (optional) the desired output format specifier string. Defaults to the LOCALTIMEPLUGIN_DATEFORMAT preference or to the Foswiki '$longdate' format
-      * =fromtopic= - (optional) the web.topic from which to set the value of the TIMEZONE variable
+      * =fromtopic= - (optional, deprecated) the web.topic from which to set the value of the TIMEZONE variable, use the LOCALTIMEPLUGIN_TIMEZONE preference instead
+      * =dateGMT= - (optional, deprecated) the same as the =datetime= parameter, use =datetime= instead
    * =$theTopic= - the name of the topic being processed
    * =$theWeb= - the name of the web containing the topic being processed
 
@@ -138,16 +139,24 @@ sub handleLocalTime {
     my $timezone =
          $params->{_DEFAULT}
       || &Foswiki::Func::getPreferencesValue('LOCALTIMEPLUGIN_TIMEZONE')
-      || 'Asia/Tokyo';
+      || 'UTC';
 
-    my $datetime = $params->{dateGMT};
+    my $datetime = $params->{datetime};
 
     my $format =
          $params->{format}
       || &Foswiki::Func::getPreferencesValue('LOCALTIMEPLUGIN_DATEFORMAT')
       || '$longdate';
 
-    if ( !defined( $params->{_DEFAULT} ) && defined($params->{fromtopic} ) ) {
+    if ( !defined( $params->{datetime} ) && defined( $params->{dateGMT} ) ) {
+        _warning( "$theWeb.$theTopic",
+            "$warning with deprecated parameter 'dateGMT'" );
+        $datetime = $params->{dateGMT};
+    }
+
+    if ( !defined( $params->{_DEFAULT} ) && defined( $params->{fromtopic} ) ) {
+        _warning( "$theWeb.$theTopic",
+            "$warning with deprecated parameter 'fromtopic'" );
 
         # Fetch the TIMEZONE setting from the indicated topic
         my ( $web, $topic ) =
