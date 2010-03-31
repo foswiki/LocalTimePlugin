@@ -144,10 +144,10 @@ sub handleLocalTime {
 
         #TODO: normalise topic
         my ( $web, $topic ) =
-          $session->normalizeWebTopicName( $theWeb, $fromtopic );
-        my $zone =
-          $session->{prefs}
-          ->getTopicPreferencesValue( 'TIMEZONE', $web, $topic );
+          Foswiki::Func::normalizeWebTopicName( $theWeb, $fromtopic );
+        Foswiki::Func::pushTopicContext( $web, $topic );
+        my $zone = Foswiki::Func::getPreferencesValue('TIMEZONE');
+        Foswiki::Func::popTopicContext();
         $tz = $zone if defined($zone);
     }
 
