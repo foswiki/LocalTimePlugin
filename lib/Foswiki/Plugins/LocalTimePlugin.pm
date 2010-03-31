@@ -4,6 +4,7 @@
 # Copyright (C) 2001-2003 Peter Thoeny, peter@thoeny.com
 # Copyright (C) 2003      Nathan Ollerenshaw, chrome@stupendous.net
 # Copyright (C) 2006-2009 Sven Dowideit, SvenDowideit@WikiRing.com
+# Copyright (C) 2010      Bryan Thale, bryan.thale@motorola.com
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -16,62 +17,125 @@
 # GNU General Public License for more details, published at
 # http://www.gnu.org/copyleft/gpl.html
 
-# =========================
+=begin TML
+
+---+ package LocalTimePlugin
+
+Implements the %<nop>LOCALTIME% macro to display a formatted date and time 
+possibly adjusted for a given time zone.
+
+Plugin Version: $Rev$
+
+=cut
+
 package Foswiki::Plugins::LocalTimePlugin;
-use Date::Handler;
+
 use strict;
 
-# =========================
-use vars qw(
-  $web $topic $user $installWeb $VERSION $RELEASE $pluginName
-  $debug $exampleCfgVar $timezone
-);
+require Foswiki::Func;
+require Foswiki::Plugins;
 
-# This should always be $Rev$ so that Foswiki can determine the checked-in
-# status of the plugin. It is used by the build automation tools, so
-# you should leave it alone.
-$VERSION = '$Rev$';
+# $VERSION is referenced by Foswiki and is the only global variable that
+# *must* exist in this package.  This should always be '$Rev$'
+# so that Foswiki can determine the checked-in status of the plugin.  It is
+# used by the build automation tools, so you should leave it alone.
+our $VERSION = '$Rev$';
 
-# This is a free-form string you can use to "name" your own plugin version.
-# It is *not* used by the build automation tools, but is reported as part
-# of the version number in PLUGINDESCRIPTIONS.
-$RELEASE = 'Dakar';
+# $RELEASE is a free-form string used to identify "releases" of a plugin
+# independent of the build system.  It is *not* used by the build automation
+# tools, but *is* reported as part of the version number by %PLUGINDESCRIPTIONS%.
+#
+# LocalTimePlugin uses a major.minor.patch numbering scheme for releases.
+# 'major' releases indicate a break in compatibility with previous versions
+# such as the removal of deprecated features.  'minor' releases indicate
+# backward-compatible changes to or new additions of functionality.  'patch'
+# releases indicate bug fixes or other internal implementation changes that
+# aren't visible to users of the package.
+our $RELEASE = '1.1';
 
-$pluginName = 'LocalTimePlugin';    # Name of this Plugin
+# One line description of this plugin reported by %PLUGINDESCRIPTIONS%
+our $SHORTDESCRIPTION =
+  'Provides the %<nop>LOCALTIME% macro to display a formatted date and/or time';
 
-# =========================
+# LocalTimePlugin uses the normal Foswiki preferences mechanism for settings
+our $NO_PREFS_IN_TOPIC = 1;
+
+=begin TML
+
+---++ initPlugin( $topic, $web, $user, $installWeb ) -> $boolean
+   * =$topic= - the name of the topic in the current CGI query
+   * =$web= - the name of the web in the current CGI query
+   * =$user= - the login name of the user
+   * =$installWeb= - the name of the web the plugin topic is in
+
+Initializes and installs the handler routine for the %<nop>LOCALTIME% macro.
+
+Returns: 1 on success, 0 on failure
+
+=cut
+
 sub initPlugin {
-    ( $topic, $web, $user, $installWeb ) = @_;
+    my ( $topic, $web, $user, $installWeb ) = @_;
 
-    # check for Plugins.pm versions
-    if ( $Foswiki::Plugins::VERSION < 1 ) {
-        Foswiki::Func::writeWarning(
-            "Version mismatch between LocalTimePlugin and Plugins.pm");
+    my $min_api_version = 1.0;
+    if ( $Foswiki::Plugins::VERSION < $min_api_version ) {
+
+        # Oops! We are not compatible with this version of the Plugin API
+        Foswiki::Func::writeWarning( "Version $RELEASE of "
+              . __PACKAGE__
+              . " requires at least version $min_api_version of the Foswiki "
+              . "Plugin API.  Current version is $Foswiki::Plugins::VERSION" );
         return 0;
     }
 
-    # Get plugin debug flag
-    $debug = Foswiki::Func::getPreferencesFlag("LOCALTIMEPLUGIN_DEBUG");
+    _debugEntryPoint( "$web.$topic", 'initPlugin',
+        { user => $user, installWeb => $installWeb } );
 
- # Get plugin preferences, the variable defined by:          * Set EXAMPLE = ...
-    $timezone = &Foswiki::Func::getPreferencesValue("LOCALTIMEPLUGIN_TIMEZONE")
-      || "Asia/Tokyo";
-
+    # Install our macro handler for %LOCALTIME%
     Foswiki::Func::registerTagHandler( 'LOCALTIME', \&handleLocalTime );
 
     # Plugin correctly initialized
-    Foswiki::Func::writeDebug(
-        "- Foswiki::Plugins::${pluginName}::initPlugin( $web.$topic ) is OK")
-      if $debug;
+    _debug( "$web.$topic", "Plugin initialized" );
     return 1;
 }
 
-# =========================
+=begin TML
+
+---++ handleLocalTime( $session, $params, $theTopic, $theWeb ) -> $string
+
+Process the %<nop>LOCALTIME% macro and return the desired date/time as a 
+formatted string.  Uses the Date::Handler Perl module.
+
+   * =$session= - a reference to the Foswiki session object
+   * =$params= - a reference to a Foswiki::Attrs object containing the macro parameters
+      * =DEFAULT= - (optional) the desired timezone in which to render the date/time. Defaults to the LOCALTIMEPLUGIN_TIMEZONE preference setting or UTC.
+      * =dateGMT= - (optional) the date/time to display, assumed to be in UTC unless the string contains a timezone identifier.  Defaults to the current date and time
+      * =format= - (optional) the desired output format specifier string. Defaults to the LOCALTIMEPLUGIN_DATEFORMAT preference or to the Foswiki '$longdate' format
+      * =fromtopic= - (optional) the web.topic from which to set the value of the TIMEZONE variable
+   * =$theTopic= - the name of the topic being processed
+   * =$theWeb= - the name of the web containing the topic being processed
+
+Returns: the date and/or time as a formatted string or an error message upon failure
+
+=cut
 
 sub handleLocalTime {
     my ( $session, $params, $theTopic, $theWeb ) = @_;
 
-    my $tz               = $params->{_DEFAULT} || $timezone;
+    _debugEntryPoint( "$theWeb.$theTopic", 'handleLocalTime', $params );
+
+    eval {
+        require Date::Handler;
+    };
+    if ($@) {
+        my $msg = "Error: Can't load required modules ($@)";
+        _warning( "$theWeb.$theTopic", $msg );
+        return "%RED%$msg%ENDCOLOR%";
+    }
+
+    my $tz               = $params->{_DEFAULT}
+      || &Foswiki::Func::getPreferencesValue('LOCALTIMEPLUGIN_TIMEZONE')
+      || 'Asia/Tokyo';
     my $formatString     = $params->{format};
     my $fromtopic        = $params->{fromtopic};
     my $specifieddateGMT = $params->{dateGMT};
@@ -158,6 +222,67 @@ sub _weekNumber {
     my $firstFourth = timegm( 0, 0, 0, 4, 0, $year );    # january, 4th
     return
       sprintf( '%.0f', ( $nextThursday - $firstFourth ) / ( 7 * 86400 ) ) + 1;
+}
+
+=begin TML
+
+---++ _warning( $topic, $msg )
+
+Log a warning and debug message. The topic is prepended to the message.
+
+   * =$topic= - the web.topic being processed
+   * =$msg= - the message text to write to the warning and debug logs
+
+=cut
+
+sub _warning {
+    my ( $topic, $msg ) = @_;
+    Foswiki::Func::writeWarning( $topic, $msg );
+    _debug( $topic, $msg );
+}
+
+=begin TML
+
+---++ _debugEntryPoint( $topic, $func, $args )
+
+Write a function entry message to the debug log if debug logging is enabled.
+The topic is prepended to the message.
+
+   * =$topic= - the web.topic being processed
+   * =$func= - the name of the function being logged
+   * =$args= - a reference to a hash containing the arguments passed to $func
+
+=cut
+
+sub _debugEntryPoint {
+    if ( Foswiki::Func::getPreferencesFlag('LOCALTIMEPLUGIN_DEBUG') ) {
+        my ( $topic, $func, $args ) = @_;
+        my $msg = '';
+        foreach my $key ( sort keys %$args ) {
+            $msg .= ", $key=>'$args->{$key}'";
+        }
+        $msg =~ s/^, //;
+        _debug( $topic, "$func( $msg )" );
+    }
+}
+
+=begin TML
+
+---++ _debug( $topic, $msg )
+
+Write the supplied message to the debug log if debug logging is enabled. The
+Perl package name and topic are prepended to the message.
+
+   * =$topic= - the web.topic being processed
+   * =$msg= - the message text to write to the debug log
+
+=cut
+
+sub _debug {
+    if ( Foswiki::Func::getPreferencesFlag('LOCALTIMEPLUGIN_DEBUG') ) {
+        my ( $topic, $msg ) = @_;
+        Foswiki::Func::writeDebug( __PACKAGE__, $topic, $msg );
+    }
 }
 
 1;
