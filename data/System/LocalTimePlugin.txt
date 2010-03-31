@@ -132,6 +132,8 @@ be set to configure the plugin to work in your particular environment.
 
 | *Setting* | *Description* |
 | ={DefaultDateFormat}= | The default date format for the site |
+| ={Tools}{perlCmd}= | The path to the Perl interpreter if it isn't on the default path |
+| ={Plugins}{LocalTimePlugin}{perlCmd}= | The path to the Perl interpreter if it isn't on the default path. If present, overrides the setting of ={ModPerlEngineContrib}{perlCmd}=  |
 
 ---++ Installation
 
@@ -170,7 +172,7 @@ attached to the Foswiki:Extensions.LocalTimePlugin topic.
 |  Support: | Foswiki:Support.%TOPIC% |
 |  Dependencies: | %$DEPENDENCIES% |
 |  Change History: | <!-- versions below in reverse order -->&nbsp; |
-|  31 Mar 2010 (1.1): | Foswikitask:Item8805 - Correct handling of parameters and formatting tokens<br/> Foswikitask:Item8806 - Change default time zone to UTC, add =datetime= parameter, deprecate =fromtopic= and =dateGMT= parameters<br /> Foswikitask:Item1854 - Use published Plugin API calls |
+|  31 Mar 2010 (1.1): | Foswikitask:Item8805 - Correct handling of parameters and formatting tokens<br/> Foswikitask:Item8806 - Change default time zone to UTC, add =datetime= parameter, deprecate =fromtopic= and =dateGMT= parameters<br /> Foswikitask:Item8757 - Add support for mod_perl2<br/> Foswikitask:Item1854 - Use published Plugin API calls |
 |  20 Feb 2009 (1.0): | port to Foswiki |
 |  <span style="white-space:pre;">05 Mar 2006 (Dakar):</span> | SvenDowideit@WikiRing.com - updated to use registerHandler, added format= and dateGMT parameters |
 |  02 Jul 2003: | Initial version |

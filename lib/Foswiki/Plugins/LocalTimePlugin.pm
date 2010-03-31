@@ -60,6 +60,10 @@ our $SHORTDESCRIPTION =
 # LocalTimePlugin uses the normal Foswiki preferences mechanism for settings
 our $NO_PREFS_IN_TOPIC = 1;
 
+# Flag indicating whether we are running in a mod_perl2 environment.  This value
+# won't change once set since it is an attribute of the process environment.
+my $modperl2;
+
 =begin TML
 
 ---++ initPlugin( $topic, $web, $user, $installWeb ) -> $boolean
@@ -90,6 +94,24 @@ sub initPlugin {
 
     _debugEntryPoint( "$web.$topic", 'initPlugin',
         { user => $user, installWeb => $installWeb } );
+
+    unless ( defined($modperl2) ) {
+
+        # Check if we're running under mod_perl2
+        my $software = '';
+        my $version  = '';
+        if ( $ENV{MOD_PERL} ) {
+            ( $software, $version ) =
+              $ENV{MOD_PERL} =~ m{^(\S+)/(\d+(?:[\.\_]\d+)+)};
+            $version         =~ s/_//g;
+            $version         =~ s/(\.[^.]+)\./$1/g;
+        }
+
+        $modperl2 = ( $software eq 'mod_perl' && $version >= 1.99922 );
+    }
+
+    _debug( "$web.$topic",
+        ( $modperl2 ? 'mod_perl2' : 'CGI' ) . ' environment detected' );
 
     # Install our macro handler for %LOCALTIME%
     Foswiki::Func::registerTagHandler( 'LOCALTIME', \&handleLocalTime );
@@ -235,7 +257,100 @@ s!^(\d{1,2})([-/ :\.])([a-zA-Z]{3,})\2(\d{4}|\d{2})([^:\.])!$1-$3-$4$5!;
         }
     );
 
-    return $date->TimeFormat($format);
+    return (
+        $modperl2
+        ? _callModPerl2Helper( $date, $format, "$theWeb.$theTopic" )
+        : $date->TimeFormat($format)
+    );
+}
+
+=begin TML
+
+---++ _callModPerl2Helper( $date, $format, $topic ) -> $string
+
+Invoke the mod_perl2-safe helper script to format and return the date.  Uses the
+APR::Base64 Perl module.
+
+   * =$date= - a reference to a Date::Handler object containing the date to format
+   * =$format= - the desired format string
+   * =$topic= - the topic containing the %<nop>LOCALTIME% macro
+
+Returns: the date and/or time as a formatted string
+
+=cut
+
+sub _callModPerl2Helper {
+    my ( $date, $format, $topic ) = @_;
+
+    eval { require APR::Base64; };
+    if ($@) {
+        my $msg = "Error: Can't load required modules ($@)";
+        _warning( $topic, $msg );
+        return "%RED%$msg%ENDCOLOR%";
+    }
+
+    my $time     = $date->Epoch();
+    my $timezone = $date->TimeZone();
+
+    my $utc = Foswiki::Time::formatTime( $time, '$iso', 'gmtime' );
+    _debugEntryPoint(
+        $topic,
+        '_callModPerl2Helper',
+        {
+            date     => $utc,
+            format   => $format,
+            timezone => $timezone
+        }
+    );
+
+    # Path to the Perl interpreter
+    my $perlCmd =
+         $Foswiki::cfg{Tools}{perlCmd}
+      || $Foswiki::cfg{Plugins}{LocalTimePlugin}{perlCmd}
+      || 'perl';
+
+    # Create a temporary helper script to pass to the external Perl interpreter
+    my $scriptFile = new File::Temp(
+        TEMPLATE => 'LocalTimePluginXXXXXXXXXX',
+        DIR      => Foswiki::Func::getWorkArea('LocalTimePlugin'),
+        UNLINK   => !Foswiki::Func::getPreferencesFlag('LOCALTIMEPLUGIN_DEBUG'),
+        SUFFIX   => '.pl'
+    );
+
+    # Protect against Perl code insertion attacks by Base64 encoding the text
+    # the user gave us
+    $timezone = APR::Base64::encode($timezone);
+    $format   = APR::Base64::encode($format);
+    my $helperScript = <<EOT;
+#!/usr/lib/perl
+use strict;
+use warnings;
+use APR::Base64;
+use Date::Handler;
+my \$timezone = APR::Base64::decode( '$timezone' );
+my \$format = APR::Base64::decode( '$format' );
+my \$date = new Date::Handler( { date => $time, 
+                                 time_zone => \$timezone } );
+print \$date->TimeFormat( \$format );
+
+EOT
+
+    Foswiki::Func::saveFile( "$scriptFile", $helperScript );
+
+    # Execute our helper script
+    my ( $output, $status ) =
+      Foswiki::Sandbox->sysCommand( "$perlCmd %HELPERSCRIPT|F%",
+        HELPERSCRIPT => "$scriptFile" );
+
+    if ($status) {
+        _warning( $topic, "Error $status: $scriptFile returned '$output'" );
+        return "%RED%Error: $output%ENDCOLOR%";
+    }
+    else {
+        _debug( $topic, "$scriptFile returned ('$output', $status)" );
+    }
+
+    return $output;
 }
 
 =begin TML
