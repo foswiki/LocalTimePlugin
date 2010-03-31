@@ -1,2 +1,3 @@
 data/System/LocalTimePlugin.txt NEW
+data/System/VarLOCALTIME.txt NEW
 lib/Foswiki/Plugins/LocalTimePlugin.pm NEW

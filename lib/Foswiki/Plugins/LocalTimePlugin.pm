@@ -104,7 +104,7 @@ sub initPlugin {
 ---++ handleLocalTime( $session, $params, $theTopic, $theWeb ) -> $string
 
 Process the %<nop>LOCALTIME% macro and return the desired date/time as a 
-formatted string.  Uses the Date::Handler Perl module.
+formatted string.  Uses the Date::Handler and Date:Parse Perl modules.
 
    * =$session= - a reference to the Foswiki session object
    * =$params= - a reference to a Foswiki::Attrs object containing the macro parameters
@@ -126,6 +126,7 @@ sub handleLocalTime {
 
     eval {
         require Date::Handler;
+        require Date::Parse;
     };
     if ($@) {
         my $msg = "Error: Can't load required modules ($@)";
@@ -133,95 +134,99 @@ sub handleLocalTime {
         return "%RED%$msg%ENDCOLOR%";
     }
 
-    my $tz               = $params->{_DEFAULT}
+    my $warning = 'invoked macro LOCALTIME';
+    my $timezone =
+         $params->{_DEFAULT}
       || &Foswiki::Func::getPreferencesValue('LOCALTIMEPLUGIN_TIMEZONE')
       || 'Asia/Tokyo';
-    my $formatString     = $params->{format};
-    my $fromtopic        = $params->{fromtopic};
-    my $specifieddateGMT = $params->{dateGMT};
 
-    if ( defined($fromtopic) ) {
+    my $datetime = $params->{dateGMT};
 
-        #TODO: normalise topic
+    my $format =
+         $params->{format}
+      || &Foswiki::Func::getPreferencesValue('LOCALTIMEPLUGIN_DATEFORMAT')
+      || '$longdate';
+
+    if ( !defined( $params->{_DEFAULT} ) && defined($params->{fromtopic} ) ) {
+
+        # Fetch the TIMEZONE setting from the indicated topic
         my ( $web, $topic ) =
-          Foswiki::Func::normalizeWebTopicName( $theWeb, $fromtopic );
+          Foswiki::Func::normalizeWebTopicName( $theWeb, $params->{fromtopic} );
         Foswiki::Func::pushTopicContext( $web, $topic );
         my $zone = Foswiki::Func::getPreferencesValue('TIMEZONE');
         Foswiki::Func::popTopicContext();
-        $tz = $zone if defined($zone);
+        $timezone = $zone if defined($zone);
     }
 
-    my $date;
-    if ( defined($specifieddateGMT) ) {
-        $date = new Date::Handler(
-            {
-                date      => Foswiki::Time::parseTime($specifieddateGMT),
-                time_zone => $tz
-            }
-        );
+    # Expand Foswiki convenience tokens into fully tokenized formats
+    $format =~
+      s|\$lon(gdate)?|$Foswiki::cfg{DefaultDateFormat} - \$hour:\$min|g;
+    $format =~ s|\$rcs|\$year/\$mo/\$day \$hour:\$min:\$sec|g;
+    $format =~ s|\$iso|\$year-\$mo-\$dayT\$hour:\$min:\$sec\$tziso|g;
+    $format =~
+      s|\$htt(p)?|\$wday, \$day \$month \$year \$hour:\$min:\$sec \$tz|g;
+    $format =~
+      s|\$ema(il)?|\$wday, \$day \$month \$year \$hour:\$min:\$sec \$tz|g;
+    $format =~
+      s|\$rfc|\$wday, \$day \$month \$year \$hour:\$min:\$sec \$tziso|g;
+
+    # Convert Foswiki tokens to strftime format specifiers
+    $format =~ s|\$sec(onds?)?|%S|g;
+    $format =~ s|\$min(utes?)?|%M|g;
+    $format =~ s|\$hou(rs?)?|%H|g;
+    $format =~ s|\$day|%d|g;
+    $format =~ s|\$wda(y)?|%a|g;
+    $format =~ s|\$dow|%w|g;
+    $format =~ s|\$wee(k)?|%V|g;
+    $format =~ s|\$mon(th)?|%b|g;
+    $format =~ s|\$mo|%m|g;
+    $format =~ s|\$yea(r)?|%Y|g;
+    $format =~ s|\$ye|%y|g;
+    $format =~ s|\$epo(ch)?|%s|g;
+    $format =~ s|\$tzi(so)?|%z|g;
+    $format =~ s|\$tz|%Z|g;
+    $format = Foswiki::Func::decodeFormatTokens($format);
+
+    my $time = time;
+    if ( defined($datetime) ) {
+
+        # Figure out the date string the user gave us
+        my $str = $datetime;
+
+        # Get rid of leading and trailing decorations
+        $str =~ s|^\s*([a-zA-Z]+,\s*)?||;
+        $str =~ s|(\s*\([^\)]\))?\s*$||;
+
+        # Normalize date component
+        $str =~
+s!^(\d{1,2})([-/ :\.])([a-zA-Z]{3,})\2(\d{4}|\d{2})([^:\.])!$1-$3-$4$5!;
+        $str =~ s!^(\d{4})([-/ :\.])(\d{1,2})\2(\d{1,2})!$1-$3-$4!;
+        $str =~ s!^(\d{4}-\d{1,2}-\d{1,2})T$!$1!;
+        $str =~ s!^(\d{4})[-/ :\.](\d{1,2})$!$1-$2-1!;
+        $str =~ s!^(\d{4}|\d{2})$!$1-1-1!;
+
+        # Normalize time component
+        $str =~
+          s!( - | |T|\.)(\d{1,2})([\.:])(\d{1,2})\3(\d{1,2}(\.\d+)?)! $2:$4:$5!;
+        $str =~ s!( - | |T|\.)(\d{1,2})([\.:])(\d{1,2})! $2:$4!;
+
+        # Parse this sucker
+        $time = Date::Parse::str2time($str);
+        unless ($time) {
+            my $msg = "unrecognized date/time: $datetime";
+            _warning( "$theWeb.$theTopic", "$warning with $msg" );
+            return "%RED%$msg%ENDCOLOR%";
+        }
     }
-    else {
-        $date = new Date::Handler( { date => time, time_zone => $tz } );
-    }
 
-#swiped from Foswiki::Time::formatTime
-#SMELL: should combine this code into Foswiki::Time, or abstract out and reuse..
-    my $value = '';
-    $formatString ||= '$wday, $day $month $year, $hour:$min:$sec ($tz)';
+    my $date = new Date::Handler(
+        {
+            date      => $time,
+            time_zone => $timezone
+        }
+    );
 
-    #    my $outputTimeZone ||= $Foswiki::cfg{DisplayTimeValues};
-
-    #standard foswiki date time formats
-    if ( $formatString =~ /rcs/i ) {
-
-        # RCS format, example: "2001/12/31 23:59:59"
-        $formatString = '$year/$mo/$day $hour:$min:$sec';
-    }
-    elsif ( $formatString =~ /http|email/i ) {
-
-        # HTTP header format, e.g. "Thu, 23 Jul 1998 07:21:56 EST"
-        # - based on RFC 2616/1123 and HTTP::Date; also used
-        # by Foswiki::Net for Date header in emails.
-        $formatString = '$wday, $day $month $year $hour:$min:$sec $tz';
-    }
-    elsif ( $formatString =~ /iso/i ) {
-
-        # ISO Format, see spec at http://www.w3.org/TR/NOTE-datetime
-        # e.g. "2002-12-31T19:30:12Z"
-        $formatString = '$year-$mo-$dayT$hour:$min:$sec';
-    }
-
-    my $wday = $date->WeekDay();
-
-    $value = $formatString;
-    $value =~ s/\$seco?n?d?s?/sprintf('%.2u',$date->Sec())/gei;
-    $value =~ s/\$minu?t?e?s?/sprintf('%.2u',$date->Min())/gei;
-    $value =~ s/\$hour?s?/sprintf('%.2u',$date->Hour())/gei;
-    $value =~ s/\$day/sprintf('%.2u',$date->Day())/gei;
-    $value =~ s/\$wday/$Foswiki::Time::WEEKDAY[$date->WeekDay()]/gi;
-    $value =~ s/\$dow/$date->WeekDay()/gei;
-    $value =~
-s/\$week/Foswiki::Time::_weekNumber($date->Day(),$date->Month()-1,$date->Year(),$date->WeekDay())/egi;
-    $value =~ s/\$mont?h?/$Foswiki::Time::ISOMONTH[$date->Month()-1]/gi;
-    $value =~ s/\$mo/sprintf('%.2u',$date->Month())/gei;
-    $value =~ s/\$year?/sprintf('%.4u',$date->Year())/gei;
-    $value =~ s/\$ye/sprintf('%.2u',$date->Year()%100)/gei;
-    $value =~ s/\$epoch/$date->Epoch()/gei;
-    $value =~ s/\$tz/$date->TimeZone()/gei;
-
-    return $value;
-}
-
-sub _weekNumber {
-    my ( $day, $mon, $year, $wday ) = @_;
-
-    # calculate the calendar week (ISO 8601)
-    my $nextThursday =
-      timegm( 0, 0, 0, $day, $mon, $year ) +
-      ( 3 - ( $wday + 6 ) % 7 ) * 24 * 60 * 60;    # nearest thursday
-    my $firstFourth = timegm( 0, 0, 0, 4, 0, $year );    # january, 4th
-    return
-      sprintf( '%.0f', ( $nextThursday - $firstFourth ) / ( 7 * 86400 ) ) + 1;
+    return $date->TimeFormat($format);
 }
 
 =begin TML

@@ -1,95 +1,178 @@
-%META:TOPICINFO{author="ProjectContributor" date="1057159140" format="1.0" version="1.2"}%
----+ <nop>%TOPIC%
+%META:TOPICINFO{author="ProjectContributor" date="1270017290" format="1.0" version="1.1"}%
+%META:TOPICPARENT{name="Plugins"}%
 
-LocalTimePlugin is kind-of rewrite of LocalCityTimePlugin. 
-I was unsatisfied with LocalCityTimePlugin (it has to connect to an external site to get the local time for a given city),
- so I wrote this Plugin to use the system's localtime functions. It works rather well, 
- but doesn't do too much checking right now for a valid code. 
- It won't die horribly if you give it a bad code, it just will give you a random time.
+---+!! !LocalTime Plugin
 
-I use it for our systems diary here. Works quite well.
+<!--
+One line description, required for extensions repository catalog.
+BuildContrib will fill in the SHORTDESCRIPTION with the value of
+$SHORTDESCRIPTION from the .pm module.
+   * Set SHORTDESCRIPTION = %$SHORTDESCRIPTION%
+--> 
+%SHORTDESCRIPTION%
 
----++ Syntax Rules
+%TOC{title="On this page:"}%
 
-Add a %<nop>LOCALTIME% tag to your text to show the current time. 
-You can specify the location or timezone such as "Asia/Tokyo" or "GMT" with 
-%<nop>LOCALTIME{location}%, where _location_ is a location mentioned at http://twiki.org/cgi-bin/xtra/tzdate, or a timezone code such as "JST".
+__Related topics:__ 
+%STARTSECTION{"related"}%[[%SYSTEMWEB%.Macros#VarDATE][DATE]], [[%SYSTEMWEB%.Macros#VarDISPLAYTIME][DISPLAYTIME{"format"}]], [[%SYSTEMWEB%.Macros#VarGMTIME][GMTIME{"format"}]], [[%SYSTEMWEB%.Macros#VarSERVERTIME][SERVERTIME{"format"}]]%ENDSECTION{"related"}%
 
-   * see http://www.twinsun.com/tz/tz-link.htm for more information
+---++ Introduction
 
-   * The =unnamed=, or =DEFAULT= parameter is the timezone to output
-   * =dateGMT= must be a datetime string that Foswiki can parse (see Foswiki::Time::parseTime), but assumes GMT
-      * 31 Dec 2001 - 23:59
-      * 2001/12/31 23:59:59
-      * 2001.12.31.23.59.59
-      * 2001/12/31 23:59
-      * 2001.12.31.23.59
-      * 2001-12-31T23:59:59Z
-      * 2001-12-31T23:59:59+01:00
-      * 2001-12-31T23:59Z
-      * 2001-12-31T23:59+01:00
-   * =format= is the same as for the format specifier in %SYSTEMWEB%/Macros#VarGMTIME
-   * fromtopic="web.topic" - the plugin tries to use the timezone set in the variable TIMEZONE on the topic selected
+Use the %<nop>LOCALTIME% macro anywhere in your topic to insert a formatted
+date and/or time for display. The macro can display either the current time or
+an arbitrary time of your choosing. Options to control the format and time zone
+to use when displaying the date/time may be specified when the macro
+is used or determined by [[#PreferenceSettings][plugin preference settings]].
+
+---++ Syntax
+%STARTSECTION{"syntax"}%   * Syntax: =%<nop>LOCALTIME%= or =%<nop>LOCALTIME{&hellip;}%=
+   * =%<nop>LOCALTIME%= expands to the current date and time using the default
+     format and time zone
+   * =%<nop>LOCALTIME{&hellip;}%= expands to a date and time allowing the 
+     default behavior to be overridden according to any parameters supplied
+   * Supported parameters:
+     | *Parameter:* | *Description:* |  *Default*  |
+     | ="timezone"= | The name of the desired time zone such as ="Asia/Tokyo"= or ="CST6CDT"= or ="UTC"= |  ="Asia/Tokyo"=  |
+     | =dateGMT="&hellip;"= | The date and time to display. This parameter is assumed to be in UTC unless it contains a time zone specifier. <br /> %TWISTY{mode="div" showlink="Supported date/time formats" hidelink="Supported date/time formats" showimgleft="%ICONURLPATH{toggleopen-small}%" hideimgleft="%ICONURLPATH{toggleclose-small}%"}%<ul>  <li>Foswiki default:    <ul>      <li> =31 Dec 2001 - 23:59 GMT= </li>    </ul>  </li>  <li>ISO 8601:    <ul>      <li> =2001-12-31T23:59:59-0500= </li>    </ul>  </li>  <li>Internet (RFC 822/1123/2616/2822/5322):    <ul>      <li> =Fri, 31 Dec 1999 23:59:59 -0500 (EST)= </li>    </ul>  </li>  <li>RCS:    <ul>      <li> =1999/12/31 23:59:59 UTC= </li>    </ul>  </li>  <li>Dotted decimal:    <ul>      <li> =1999.12.31.23.59.59 UTC= </li>    </ul>  </li></ul><br /> __Notes:__ <ul>  <li>Dates must be between =<nobr>1901-12-17 00:00:00 UTC</nobr>= and =<nobr>2038-01-16 23:59:59 UTC</nobr>= </li>  <li>Text in ()'s is ignored as are the day of the week and comma, if present.</li>  <li>The time component is optional and defaults to midnight. If supplied, both hour and minute fields are required while seconds are optional.</li>  <li>Time zone specifiers are optional and default to UTC. When specified as an offset from UTC, they may be specified as &plusmn;HHMM or &plusmn;HH:MM</li>  <li>Time zones are part of the time specification, so you must specify a time in order to specify a time zone.  If you desire a date to be interpreted locally, explicitly indicate midnight and the local time zone as in =<nobr>2010-03-24&nbsp;00:00&nbsp;-0600</nobr>=  <li>Years may be specified using 2 or 4 digits. When only 2 digits are supplied:  <ul>    <li>00 to 38 are interpreted as the years 2000 to 2038</li>    <li>39 to 60 are invalid and result in an error</li>    <li>61 to 99 are interpreted as 1961 to 1999</li>  </ul>  <li>Months may be specified as numbers (1-12), short names (Jan-Dec), or long names (January-December), English month names only</li>  <li>When both the month and day are specified as numbers, they are always interpreted assuming an American-style date format where the month comes before the day. (i.e. MM/DD/CCYY)</li>  <li>When only a month and day are specified, the year is assumed to be the current year if the date falls within the current or a prior month and the prior year if the date falls within a subsequent month.</li>  <li>When only a year is specified, January 1st is assumed.</li></ul>%ENDTWISTY% | Current&nbsp;time |
+     | =format="&hellip;"= | The format specifier string defining how to display the date and/or time |  ="$longdate"=  |
+     | =fromtopic="&hellip;"= | The =web.topic= from which to get the value of the =TIMEZONE= variable | |
+%ENDSECTION{"syntax"}%
+   * Supported format tokens:%STARTSECTION{"tokens"}%
+     | *Token:* | *Unit:* | *Example* |
+     | =$seconds= | seconds | 59 |
+     | =$minutes= | minutes | 59 |
+     | =$hours= | hours | 23 |
+     | =$day= | day of month | 31 |
+     | =$wday= | day of the Week (Sun, Mon, Tue, Wed, Thu, Fri, Sat) | Thu |
+     | =$dow= | day of the week (Sun = 0) | 2  |
+     | =$week= | number of week in year (ISO 8601) | 34 |
+     | =$month= | short name of month | Dec |
+     | =$mo= | 2 digit month | 12 |
+     | =$year= | 4 digit year | 1999 |
+     | =$ye= | 2 digit year | 99 |
+     | =$tziso= | time zone as offset from UTC &plusmn;HHMM | -0500 |
+     | =$tz= | time zone identifier | UTC |
+     | =$epoch= | seconds since 1970-01-01T00:00:00Z | 1057159140 |
+     | =$iso= | ISO format timestamp | 1999-12-31T23:59:59-0500  |
+     | =$rcs= | RCS format timestamp | 1999/12/31 23:59:59 |
+     | =$http= | RFC 2616 timestamp, same as =$email= | Fri, 31 Dec 1999 23:59:59 EST |
+     | =$email= | RFC 822/1123 timestamp, same as =$http= | Fri, 31 Dec 1999 23:59:59 EST |
+     | =$rfc= | RFC 2822/5322 timestamp | Fri, 31 Dec 1999 23:59:59 -0500 |
+     | =$longdate= | Site default date format followed by =" - HH:MM"= | 31 Dec 1999 - 23:59 |
+      * Tokens can be shortened to $ followed by 3 characters (=$sec= for =$seconds=)
+      * The singular versions =$second=, =$minute=, and =$hour= are also accepted
+      * =format= also accepts =strftime= format specifiers.  However, since the 
+        percent sign is significant to Foswiki, the =$percnt= token must be used
+        instead of an actual percent sign.  For example: the default locale 
+        timestamp specifier =%<nop>c= would be specified as =$percntc= in the 
+        format string.%ENDSECTION{"tokens"}%
+
 
 ---++ Examples
-| | you type | if installed you get |
-| Time in Tokyo now | %<nop>LOCALTIME{Asia/Tokyo}% | %LOCALTIME{Asia/Tokyo}% |
-| Time in London now | %<nop>LOCALTIME{Europe/London}% | %LOCALTIME{Europe/London}% |
-| Time in your TIMEZONE (if you've set the TIMEZONE VAR) now | %<nop>LOCALTIME{fromtopic="$percntWIKIUSERNAME$percnt"}% | %LOCALTIME{fromtopic="$percntWIKIUSERNAME$percnt"}% |
-| 05 Apr 2006, 15:43:50 GMT in Sydney/Australia | %<nop>LOCALTIME{"Australia/Sydney" dateGMT="05 Apr 2006 - 15:43:50"}% | %LOCALTIME{"Australia/Sydney" dateGMT="05 Apr 2006 - 15:43:50"}% |
-| 05 Apr 2006, 15:43:50 GMT in Sydney/Australia (format as iso) | %<nop>LOCALTIME{"Australia/Sydney" dateGMT="05 Apr 2006 - 15:43:50" format="iso"}% | %LOCALTIME{"Australia/Sydney" dateGMT="05 Apr 2006 - 15:43:50" format="iso"}% |
 
-This plugin can be used in combination with the CalendarPlugin, to get a localtime version of your appointments.
+If the plugin has been successfully installed, the following examples will show
+several ways to manipulate the display of dates and times using the plugin.
 
-Your WikiAdmin may need to add this plugin to the pluginsOrder to make sure it evaluates before CalendarPlugin.
+__Current default settings:__
+   * LOCALTIMEPLUGIN_DATEFORMAT is: %IF{"defined 'LOCALTIMEPLUGIN_DATEFORMAT'" then="%LOCALTIMEPLUGIN_DATEFORMAT%" else="$longdate"}%
+   * LOCALTIMEPLUGIN_TIMEZONE is: %IF{"defined 'LOCALTIMEPLUGIN_TIMEZONE'" then="%LOCALTIMEPLUGIN_TIMEZONE%" else="Asia/Tokyo"}%
 
-to add a IrcMeeting add a line like
-<verbatim>   * %<nop>LOCALTIME{"Australia/Sydney" dateGMT="6 Mar 2006 - 15:39" format="$day $month"}% - IrcMeeting=
-</verbatim>
+| *You want:* | *You type:* | *You get (if installed):* |
+| Current time: | =%<nop>LOCALTIME%= | %LOCALTIME% |
+| Current time in Tokyo: | =%<nop>LOCALTIME{"Asia/Tokyo"}%= | %LOCALTIME{"Asia/Tokyo"}% |
+| Current time where you are: | =%<nop>LOCALTIME{fromtopic="%<nop>WIKIUSERTOPIC%"}%= | %LOCALTIME{fromtopic="%WIKIUSERTOPIC%"}% |
+| Current time in US Central Time Zone: | =%<nop>LOCALTIME{"CST6CDT"}%= | %LOCALTIME{"CST6CDT"}% |
+| Current time in Internet format: | =%<nop>LOCALTIME{format="$rfc"}%= | %LOCALTIME{format="$rfc"}% |
+| 2006-04-05T15:43:50Z in Sydney, Australia: | =%<nop>LOCALTIME{"Australia/Sydney" dateGMT="2006-04-05T15:43:50Z"}%= | %LOCALTIME{"Australia/Sydney" dateGMT="2006-04-05T15:43:50Z"}% |
+| <nobr>Sun, 28 Mar 2010 05:58:38 -0500 (CDT)</nobr> in Sydney, Australia in HTTP format: | =%<nop>LOCALTIME{"Australia/Sydney" dateGMT="Sun, 28 Mar 2010 05:58:38 -0500 (CDT)" format="$http"}%= | %LOCALTIME{"Australia/Sydney" dateGMT="Sun, 28 Mar 2010 05:58:38 -0500 (CDT)" format="$http"}% |
 
-you can even define a USER Variable on your UserTopic, that sets a TimeZone variable, and replace the hardcoded Timezone with that variable.
+#PreferenceSettings
+---++ Preference Settings
 
----++ <nop>%TOPIC% Global Settings
+The default expansion of the %<nop>LOCALTIME% macro may be altered by setting 
+[[%SYSTEMWEB%.PreferenceSettings][Foswiki preference settings]]. These settings 
+can be placed in your wiki's [[%LOCALSITEPREFS%][Site Preferences topic]], your 
+web's [[WebPreferences][Web Preferences topic]], your own 
+[[%WIKIUSERNAME%][User Preferences topic]], or any individual topic.
 
-	* One line description:
-		* Set SHORTDESCRIPTION = A plugin to give the current date and time of a particular city/timezone.
+| *Setting* | *Description* |  *Default*  |
+| DATEFORMAT | The default output format specifier to use when formatting dates and/or times |  =$longdate=  |
+| DEBUG | Enable/disable logging of debug traces to the Foswiki Debug Log |  =off=  |
+| TIMEZONE | The default time zone to use when interpreting the value of the =dateGMT= parameter when no time zone is provided. |  =Asia/Tokyo=  |
 
-	* Debug plugin: (See output in =data/debug.txt=)
-		* Set DEBUG = 0
+__Note:__ 
+In the table above, the "LOCALTIMEPLUGIN_" prefix has been omitted from each of 
+the setting names for brevity. In order to make use of a setting, you must use 
+the full name of the setting including the prefix 
+(e.g., "LOCALTIMEPLUGIN_DATEFORMAT").
 
-	* Defaults:
-		* Set TIMEZONE = Asia/Tokyo
+---+++ Setting Plugin Preferences
 
----++ Plugin Installation Instructions
+Use TML assignment statements in the body content or the topic preferences of 
+a topic to set the value of a plugin preference. You can copy one or more of 
+the example assignment statements below to set the desired preference value.
 
-__Note:__ You do not need to install anything on the browser to use this plugin. The following instructions are for the administrator who installs the plugin on the server where Foswiki is running. 
+<pre>
+   %ASTERISK% Set LOCALTIMEPLUGIN_DATEFORMAT = $longdate
+   %ASTERISK% Set LOCALTIMEPLUGIN_DEBUG = off
+   %ASTERISK% Set LOCALTIMEPLUGIN_TIMEZONE = UTC
+</pre>
 
-	* Install the Date::Handler package from CPAN:
-		* perl -MCPAN -e 'install Date::Handler'
-	* Download the ZIP file from the Plugin web (see below)
-	* Unzip ==%TOPIC%.zip== in your Foswiki installation directory. Content:
-	  | *File:* | *Description:* |
-	  | ==data/System/%TOPIC%.txt== | Plugin topic |
-	  | ==data/System/%TOPIC%.txt,v== | Plugin topic repository |
-	  | ==lib/Foswiki/Plugins/%TOPIC%.pm== | Plugin Perl module |
-	* Visit =configure= in your Foswiki installation, and enable the plugin in the {Plugins} section.
-	* Test if the installation was successful:
-		* %LOCALTIME%
+#ConfigurationSettings
+---++ Configuration Settings
 
+The following information is for the administrator who installs this plugin on
+the server.
+
+!LocalTimePlugin makes use of the following configuration settings which may 
+be set to configure the plugin to work in your particular environment.
+
+| *Setting* | *Description* |
+| ={DefaultDateFormat}= | The default date format for the site |
+
+---++ Installation
+
+%$INSTALL_INSTRUCTIONS%
+
+---+++ Manual Installation 
+
+This plugin may be installed manually by downloading the distribution package 
+attached to the Foswiki:Extensions.LocalTimePlugin topic.
+   1. Install/upgrade any packages listed in [[#PluginInfo][Dependencies]] below
+   1. Download the .zip or .tgz distribution package and place it in the root 
+      directory of your Foswiki installation.
+   1. Unpack the distribution package
+   1. Using the Foswiki configuration utility, configure the values described 
+      in [[#ConfigurationSettings][Configuration]] above and enable the plugin.
+      (If using an accellerator such as mod_perl, it may be necessary to 
+      restart your server before your configuration changes will take effect.)
+   1. Set any default [[#PreferenceSettings][preference values]] in 
+      [[%LOCALSITEPREFS%][Site]], Web, and User Preference topics as desired.
+
+---+++ Installation Test
+
+| Current time (UTC): | %LOCALTIME{"UTC"}% |
+| Current time (Asia/Tokyo): | %LOCALTIME{"Asia/Tokyo"}% |
+| Current time (!CST6CDT): | %LOCALTIME{"CST6CDT" format="$rfc"}% |
+| 2010-03-24T12:34:56Z: | %LOCALTIME{dateGMT="2010-03-24T12:34:56Z" format="$iso"}% |
+
+#PluginInfo
 ---++ Plugin Info
 
-|  Plugin Author: | TWiki:Main.NathanOllerenshaw & Foswiki:Main.SvenDowideit |
-|  Plugin Version: | %$VERSION% |
+|  Author: | TWiki:Main.NathanOllerenshaw, Foswiki:Main.SvenDowideit, & Foswiki:Main.BryanThale |
+|  Copyright: | &copy; 2010, Foswiki Contributors |
+|  License: | GPL ([[http://www.gnu.org/copyleft/gpl.html][GNU General Public License, Version 3]]) |
+|  Version: | %$RELEASE% (%$VERSION%) |
+|  Home: | Foswiki:Extensions.%TOPIC% |
+|  Support: | Foswiki:Support.%TOPIC% |
+|  Dependencies: | %$DEPENDENCIES% |
 |  Change History: | <!-- versions below in reverse order -->&nbsp; |
-|  20 Feb 2009: | port to Foswiki |
-|  05 Mar 2006: | SvenDowideit@WikiRing.com - updated to use registerHandler, added format= and dateGMT parameters |
+|  31 Mar 2010 (1.1): | Foswikitask:Item8805 - Correct handling of parameters and formatting tokens<br /> Foswikitask:Item1854 - Use published Plugin API calls |
+|  20 Feb 2009 (1.0): | port to Foswiki |
+|  <span style="white-space:pre;">05 Mar 2006 (Dakar):</span> | SvenDowideit@WikiRing.com - updated to use registerHandler, added format= and dateGMT parameters |
 |  02 Jul 2003: | Initial version |
-|  CPAN Dependencies: | Date::Handler |
-|  Other Dependencies: | none |
-|  Perl Version: | 5.005 |
-|  Plugin Home: | http://foswiki.org/Extensions/%TOPIC% |
 
-__Related Topics:__ %SYSTEMWEB%.DefaultPreferences, %USERSWEB%.SitePreferences, [[%SYSTEMWEB%.Plugins][Plugins]]
+__Related Topics:__ 
+%INCLUDE{"%TOPIC%" section="related"}%
 
--- TWiki:Main/NathanOllerenshaw - 02 Jul 2003
--- Foswiki:Main/SvenDowideit - 06 Mar 2006
+%META:PREFERENCE{name="ASTERISK" title="ASTERISK" type="Set" value="*"}%
