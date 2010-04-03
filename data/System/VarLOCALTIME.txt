@@ -1,8 +1,8 @@
-%META:TOPICINFO{author="ProjectContributor" date="1231502400" format="1.1" version="$Rev$"}%
+%META:TOPICINFO{author="ProjectContributor" date="1270329174" format="1.1" version="1.1"}%
 %META:TOPICPARENT{name="Macros"}%
 #VarLOCALTIME
 ---+++ LOCALTIME{&hellip;} -- display formatted date and/or time
    * The =%<nop>LOCALTIME%= macro is provided by the %SYSTEMWEB%.LocalTimePlugin
 %INCLUDE{"%SYSTEMWEB%.LocalTimePlugin" section="syntax"}%
-   * %TWISTY{mode="div" showlink="Supported format tokens" hidelink="Supported format tokens" showimgleft="%ICONURLPATH{toggleopen-small}%" hideimgleft="%ICONURLPATH{toggleclose-small}%"}%%INCLUDE{"%SYSTEMWEB%.LocalTimePlugin" section="tokens"}%%ENDTWISTY%
+   * %TWISTY{mode="div" link="Supported format tokens" showimgleft="%ICONURLPATH{toggleopen-small}%" hideimgleft="%ICONURLPATH{toggleclose-small}%"}%%INCLUDE{"%SYSTEMWEB%.LocalTimePlugin" section="tokens"}%%ENDTWISTY%
    * Related: %INCLUDE{"%SYSTEMWEB%.LocalTimePlugin" section="related"}%
