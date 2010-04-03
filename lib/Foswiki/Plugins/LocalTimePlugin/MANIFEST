@@ -1,3 +1,4 @@
-data/System/LocalTimePlugin.txt NEW
-data/System/VarLOCALTIME.txt NEW
-lib/Foswiki/Plugins/LocalTimePlugin.pm NEW
+data/System/LocalTimePlugin.txt 0644 Plugin documentation topic
+data/System/VarLOCALTIME.txt 0644 Syntax summary for the LOCALTIME macro
+lib/Foswiki/Plugins/LocalTimePlugin.pm 0444 Plugin module
+lib/Foswiki/Plugins/LocalTimePlugin/Config.spec 0644 Config template

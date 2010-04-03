@@ -1,4 +1,4 @@
-%META:TOPICINFO{author="ProjectContributor" date="1270017290" format="1.0" version="1.1"}%
+%META:TOPICINFO{author="ProjectContributor" date="1270329174" format="1.1" version="1.1"}%
 %META:TOPICPARENT{name="Plugins"}%
 
 ---+!! !LocalTime Plugin
@@ -192,7 +192,7 @@ be set to adapt the plugin to work in your particular environment.
 |  Support: | Foswiki:Support.%TOPIC% |
 |  Dependencies: | %$DEPENDENCIES% |
 |  Change History: | <!-- versions below in reverse order -->&nbsp; |
-|  31 Mar 2010 (1.1): | Foswikitask:Item8805 - Correct handling of parameters and formatting tokens<br/> Foswikitask:Item8806 - Change default time zone to UTC, add =datetime= parameter, deprecate =fromtopic= and =dateGMT= parameters<br/> Foswikitask:Item8757 - Add support for mod_perl2<br/> Foswikitask:Item8807 - Add support for user locale<br/> Foswikitask:Item1854 - Use published Plugin API calls |
+|  03 Apr 2010 (1.1): | [[Foswikitask:Item8805]] - Correct handling of parameters and formatting tokens<br/> [[Foswikitask:Item8806]] - Change default time zone to UTC, add =datetime= parameter, deprecate =fromtopic= and =dateGMT= parameters<br/> [[Foswikitask:Item8757]] - Add support for mod_perl2<br/> [[Foswikitask:Item8807]] - Add support for user locale<br/> [[Foswikitask:Item1854]] - Use published Plugin API calls |
 |  20 Feb 2009 (1.0): | port to Foswiki |
 |  <span style="white-space:pre;">05 Mar 2006 (Dakar):</span> | SvenDowideit@WikiRing.com - updated to use registerHandler, added format= and dateGMT parameters |
 |  02 Jul 2003: | Initial version |
