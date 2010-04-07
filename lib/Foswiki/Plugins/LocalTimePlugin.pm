@@ -51,7 +51,7 @@ our $VERSION = '$Rev$';
 # backward-compatible changes to or new additions of functionality.  'patch'
 # releases indicate bug fixes or other internal implementation changes that
 # aren't visible to users of the package.
-our $RELEASE = '1.1';
+our $RELEASE = '1.1.1';
 
 # One line description of this plugin reported by %PLUGINDESCRIPTIONS%
 our $SHORTDESCRIPTION =
