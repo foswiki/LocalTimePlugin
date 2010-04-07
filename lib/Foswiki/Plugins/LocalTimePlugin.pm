@@ -81,7 +81,7 @@ Returns: 1 on success, 0 on failure
 sub initPlugin {
     my ( $topic, $web, $user, $installWeb ) = @_;
 
-    my $min_api_version = 1.0;
+    my $min_api_version = 2.0;
     if ( $Foswiki::Plugins::VERSION < $min_api_version ) {
 
         # Oops! We are not compatible with this version of the Plugin API
@@ -153,8 +153,10 @@ sub handleLocalTime {
         require Date::Parse;
     };
     if ($@) {
-        my $msg = "Error: Can't load required modules ($@)";
-        _warning( "$theWeb.$theTopic", $msg );
+        # Capture error message up to the first newline
+        $@ =~ /^(.*)/;
+        my $msg = "Error: Can't load required modules";
+        _warning( "$theWeb.$theTopic", "$msg ($1)" );
         return "%RED%$msg%ENDCOLOR%";
     }
 
@@ -291,8 +293,10 @@ sub _callModPerl2Helper {
 
     eval { require APR::Base64; };
     if ($@) {
-        my $msg = "Error: Can't load required modules ($@)";
-        _warning( $topic, $msg );
+        # Capture error message up to the first newline
+        $@ =~ /^(.*)/;
+        my $msg = "Error: Can't load required modules";
+        _warning( $topic, "$msg ($1)" );
         return "%RED%$msg%ENDCOLOR%";
     }
 
