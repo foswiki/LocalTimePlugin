@@ -153,6 +153,7 @@ sub handleLocalTime {
         require Date::Parse;
     };
     if ($@) {
+
         # Capture error message up to the first newline
         $@ =~ /^(.*)/;
         my $msg = "Error: Can't load required modules";
@@ -293,6 +294,7 @@ sub _callModPerl2Helper {
 
     eval { require APR::Base64; };
     if ($@) {
+
         # Capture error message up to the first newline
         $@ =~ /^(.*)/;
         my $msg = "Error: Can't load required modules";
